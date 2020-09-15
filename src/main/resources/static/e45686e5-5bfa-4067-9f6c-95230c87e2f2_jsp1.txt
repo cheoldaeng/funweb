@@ -1,0 +1,212 @@
+애플리케이션 개발
+
+- 자바 - JSP1 웹개발 - JSP2(모델2,MVC) - 프레임워크(스프링)
+       - 안드로이드
+	   
+정적웹프로그램 - HTML, CSS, JavaScript - 클라이언트실행
+동적웹프로그램 - JSP, PHP, ASP, ASP.NET - 서버실행
+
+설치
+1. JDK 설치 (오라클JDK, 오픈JDK 등...)
+2. 웹서버(아파치-톰캣) 설치
+   http://tomcat.apache.org/
+3. 웹서버 시작
+   C:\Program Files\Apache Software Foundation\Tomcat 9.0\bin
+   Tomcat9.exe   (터미널 모드로 실행)
+   Tomcat9w.exe  (윈도우 모드로 실행)
+
+- 웹서버 접속
+http://localhost:8081
+http://127.0.0.1:8081
+
+
+- jsp문법
+
+<%@ %> page지시어, include지시어, taglib지시어
+<%! %> 전역변수, 메소드선언
+<%  %> 스크립틀릿(자바코드 영역)
+<%= %> 표현식(브라우저에 간단 출력)
+
+내장객체(request,response,out,session...)
+세션,쿠키
+Database
+액션태그
+
+모델1
+자바빈, VO(Value Object: 값객체)
+회원가입, 로그인, 게시판
+파일업로드 - 자료실
+사이트 완성
+
+- MySQL
+1. 데이터베이스 공간: 데이터베이스 객체들이 저장되는 이름공간
+              데이터베이스 이름: jspdb
+
+  CREATE DATABASE jspdb;		  
+  SHOW DATABASES;
+	
+2. 데이터베이스 공간을 사용할 사용자 생성
+   사용자: jspuser       비밀번호: jsppass
+   
+  GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,ALTER,DROP
+  ON jspdb.* TO 'jspuser'@'localhost'
+  IDENTIFIED BY 'jsppass';
+
+  GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,ALTER,DROP
+  ON jspdb.* TO 'jspuser'@'%'
+  IDENTIFIED BY 'jsppass';
+
+접속확인
+  cmd 새로운 콘솔창 열기
+  mysql -u jspuser -p
+  jsppass
+  
+  
+DB확인
+  SHOW DATABASES;
+ 
+DB사용 선택
+  USE jspdb;
+  
+  
+빠져나오기
+  EXIT;
+  
+
+3. 테이블 생성: 주제별로 데이터를 저장할 공간 생성
+     회원: member     상품, 장바구니, 주문, 게시판, ....
+
+테이블 확인
+   SHOW TABLES;
+   
+회원테이블 생성
+   CREATE TABLE member (
+       id  VARCHAR(30) NOT NULL PRIMARY KEY,
+	   passwd VARCHAR(30) NOT NULL,
+       name VARCHAR(30) NOT NULL,
+       age INT,
+	   gender VARCHAR(6),
+	   reg_date DATETIME
+   );
+ 
+테이블 수정
+   ALTER TABLE member
+   ADD email VARCHAR(30);
+
+테이블 구조 확인
+   DESC member;
+
+
+
+게시판 테이블 생성
+   CREATE TABLE board (
+       num INT PRIMARY KEY,
+       name VARCHAR(30),
+	   passwd VARCHAR(30),
+	   subject VARCHAR(50),
+	   content TEXT(65535),
+	   filename VARCHAR(50),
+	   readcount INT,
+	   ip VARCHAR(20),
+	   reg_date DATETIME,
+	   
+       re_ref INT, /* 글 그룹 번호 */
+	   re_lev INT, /* 글 들여쓰기 레벨 */
+	   re_seq INT  /* 글 그룹 내에서의 순서 */
+   );
+
+
+
+SELECT *
+FROM board
+ORDER BY re_ref DESC, re_seq ASC;
+
+
+num      subject            re_ref     re_lev     re_seq
+=============================================================
+ 6      주글3                 6          0          0
+ 4      주글2                 4          0          0
+ 5          답글1             4          1          1
+ 1      주글1                 1          0          0 
+ 7          답글2             1          1          1
+ 2          답글1             1          1          1+1=2
+ 3              답글1_1       1          2          2+1=3
+
+
+-- MySQL 번호생성기 select문
+select ifnull(max(num), 0) + 1 as max_num
+from board;
+
+
+-- MySQL 페이징 쿼리문
+SELECT * 
+FROM board
+ORDER BY num ASC
+LIMIT 0, 10;
+
+--LIMIT startRow, pageSize;
+
+pageSize = 10;
+
+-- 시작행번호 구하기
+int pageNum = 1; // 사용자 입력 파라미터값 페이지번호
+
+int startRow = (pageNum-1) * pageSize;
+
+
+
+-- 게시판 첨부파일 테이블
+CREATE TABLE `jspdb`.`attachfile` (
+  `uuid` VARCHAR(40) NOT NULL,
+  `filename` VARCHAR(200) NULL,
+  `uploadpath` VARCHAR(200) NULL,
+  `image` VARCHAR(5) NULL,
+  `bno` INT NULL,
+  PRIMARY KEY (`uuid`));
+
+
+
+-- member 테이블에 컬럼 3개 추가
+ALTER TABLE `jspdb`.`member` 
+ADD COLUMN `address` VARCHAR(100) NULL AFTER `reg_date`,
+ADD COLUMN `tel` VARCHAR(20) NULL AFTER `address`,
+ADD COLUMN `mtel` VARCHAR(20) NULL AFTER `tel`;
+
+
+
+
+
+cmd창
+데이터베이스 백업
+mysqldump -uroot -p jspdb > back.sql
+Enter password: root
+
+
+집 데이터베이스 생성 create database jspdb
+데이터베이스 백업 => 복원
+mysql -uroot -p jspdb < back.sql
+Enter password: root
+
+
+
+  GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,ALTER,DROP
+  ON employees.* TO 'jspuser'@'localhost'
+  IDENTIFIED BY 'jsppass';
+
+  GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,ALTER,DROP
+  ON employees.* TO 'jspuser'@'%'
+  IDENTIFIED BY 'jsppass';
+
+
+-- 부서별(부서이름별) 사원수
+SELECT d.dept_name, COUNT(de.emp_no) count
+FROM dept_emp de LEFT OUTER JOIN departments d
+ON de.dept_no = d.dept_no
+GROUP BY de.dept_no;
+
+
+
+
+
+
+
